@@ -1,8 +1,10 @@
+import ast
 from bs4 import BeautifulSoup
 from configparser import ConfigParser
 import pandas as pd
 from pathlib import Path
 import pickle as pk
+from pymongo import MongoClient
 import re
 import requests
 import sqlite3
@@ -120,18 +122,29 @@ def convert_to_rank(dataframes, formats, aspects):
 
     return dataframes_pct
 
-def write_tables(dataframes, dataframes_pct, formats, aspects, path):
+def write_tables(dataframes, dataframes_pct, formats, aspects, client):
+    db = client.stats
     for format_ in formats.values():
-        connection = sqlite3.connect('{}/{}.db'.format(path,format_))
         for aspect in aspects:
-            dataframes[format_][aspect].to_sql(aspect, connection, if_exists='replace',
-            index_label='pid')
-            dataframes_pct[format_][aspect].to_sql('{}_pct'.format(aspect), connection, if_exists='replace',
-            index_label='pid')
+
+            dataframes[format_][aspect].reset_index(inplace=True)
+            dataframes_pct[format_][aspect].reset_index(inplace=True)
+
+            stats = db['stats_{}_{}'.format(format_, aspect)]
+            stats_pct = db['stats_pct_{}_{}'.format(format_, aspect)]
+            
+            for record in dataframes[format_][aspect].to_dict(orient='records'):
+                stats.insert_one(record)
+                print('Stats for Player {} added'.format(record['pid']))
+            
+            for record in dataframes_pct[format_][aspect].to_dict(orient='records'):
+                stats_pct.insert_one(record)
+                print('Percentile Stats for Player {} added'.format(record['pid']))
+            
 
 if __name__ == "__main__":
     config = ConfigParser()
-    config.read("config.ini")
+    config.read("../config.ini")
     
     base_url = config['URLs']['BaseURL']
     list_url = '{}/{}'.format(base_url, config['URLs']['AllPlayersRoute'])
@@ -140,15 +153,16 @@ if __name__ == "__main__":
     base_path = config['Files']['BasePath']
     mappings_file = '{}/{}'.format(base_path, config['Files']['Mappings'])
     stats_file = '{}/{}'.format(base_path, config['Files']['Stats'])
-    db_path = '{}/{}'.format(base_path, config['Files']['Databases'])
+
+    db_url = config['DB']['url']
+    db_port = int(config['DB']['PORT'])
+    to_write_db = ast.literal_eval(config['DB']['TO_WRITE'])
 
     formats = {int(index):format_ for index, format_ in dict(config['MatchFormats']).items()}
     aspects = eval(config['Player']['Aspects'])
     columns_to_drop = {key.capitalize():eval(value) for key, value in dict(config['ToDrop']).items()}
 
-    dbs_exist = [Path('{}/{}.db'.format(db_path,format_)).is_file() for format_ in formats.values()]
-
-    if False in dbs_exist:
+    if to_write_db:
         id_mapping = None
         if Path(mappings_file).is_file():
             with open(mappings_file, 'rb') as f:
@@ -175,4 +189,5 @@ if __name__ == "__main__":
         dataframes = stats_to_dataframes(stats, formats, aspects, columns_to_drop)
         percentile_dataframes = convert_to_rank(dataframes, formats, aspects)
 
-        write_tables(dataframes, percentile_dataframes, formats, aspects, db_path)
+        client = MongoClient(db_url, db_port)
+        write_tables(dataframes, percentile_dataframes, formats, aspects, client)
