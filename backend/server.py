@@ -1,23 +1,34 @@
 from configparser import ConfigParser
-from flask import Flask, make_response, jsonify
+from db_service import DbClient
+from flask import Flask, make_response, jsonify, request
 
 app = Flask(__name__)
 
-@app.route('/')
-def greeting():
-    return 'Hi! Welcome to cricradar'
+@app.route('/', methods = ['GET', 'POST'])
+def service():
+    if request.method == 'GET':
+        return 'Hi! Welcome to cricradar'
+    if request.method == 'POST':
+        request.data
+        player_id = request.form.get('id')
+        format_ = request.form.get('format')
+        aspect = request.form.get('aspect')
+        client = DbClient()
+        query_response = client.fetch_stats(player_id, format_, aspect)
+        return jsonify(query_response)
 
-@app.route('/<int:id>')
-def stats(id):
-    data = {
-        'id':id,
-        'stats':{
-            'matches':1,
-            'runs':12,
-            'tenturies':1
-        }
-    }
-    return jsonify(data)
+# @app.route('/', methods = ['POST'])
+# def stats(id, table):
+#     data = {
+#         'id':id,
+#         'format':table,
+#         'stats':{
+#             'matches':1,
+#             'runs':12,
+#             'tenturies':1
+#         }
+#     }
+#     return jsonify(data)
 
 @app.errorhandler(404)
 def data_not_found(error):
