@@ -20,7 +20,7 @@ class SearchPanel extends Component {
     }
 
     fetchStats = () => {
-        fetch("http://localhost:7000",
+        fetch("/",
         {
           method: "POST",
           headers: {"Content-Type": "application/json"},
