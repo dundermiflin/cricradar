@@ -15,12 +15,14 @@ class DbClient:
         }
         client = MongoClient(self.db_url, self.db_port)
         db = client.stats
-
         result = {}
         for key, table_name in table_names.items():
             table = db[table_name]
             result[key] = table.find_one({'pid':str(player_id)})
             result[key].pop('_id',None)
+            result[key].pop('pid',None)
+            captions = list(result[key].keys())
+            result['captions'] = {x:x.replace("_"," ") for x in captions}
 
         return result 
 
