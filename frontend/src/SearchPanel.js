@@ -10,6 +10,7 @@ class SearchPanel extends Component {
       this.state = {captions: {},
                     data: {},
                     showChart: false,
+                    error: false,
                     pid: '3600',
                     format: 'test',
                     aspect: 'Batting'
@@ -26,18 +27,32 @@ class SearchPanel extends Component {
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({id: this.state.pid, format: this.state.format, aspect: this.state.aspect})
         })
-        .then(response => response.json())
         .then(response => {
-    
+          if (response.status >= 200 && response.status <= 299) {
+            return response.json();
+          } else {
+            throw Error(response.statusText);
+          }
+        })
+        .then(response => {
           this.setState({
             captions: response["captions"],
             data: [{data:response["percentiles"], meta:{ color: 'red' }}],
-            showChart: true
+            showChart: true,
+            error: false
+          });
+        })
+        .catch((error) => {
+          this.setState({
+            error: true
           });
         })
       }
   
     handleChange(event) {
+        if(event.target.name !== 'pid'){
+          this.fetchStats();
+        }
         this.setState({
             [event.target.name]: event.target.value});
     }
@@ -56,6 +71,9 @@ class SearchPanel extends Component {
                   size={400}
                 />
         }
+        if (this.state.error === true){
+          radar = <p>Error in fetching</p>
+        }
       return (
         <div>
           <form onSubmit={this.handleSubmit}>
@@ -65,11 +83,18 @@ class SearchPanel extends Component {
             </label>
             <label>
               Format:
-              <input type="text" name="format" value={this.state.format} onChange={this.handleChange} />
+              <select name="format" value={this.state.format} onChange={this.handleChange}>
+                <option value="test">Test</option>
+                <option value="odi">ODI</option>
+                <option value="t20i">T20I</option>
+              </select>
             </label>
             <label>
               Aspect:
-              <input type="text" name="aspect" value={this.state.aspect} onChange={this.handleChange} />
+              <select name="aspect" value={this.state.aspect} onChange={this.handleChange}>
+                <option value="Batting">Batting</option>
+                <option value="Bowling">Bowling</option>
+              </select>
             </label>
             <AwesomeButton type="submit" value="Submit">Fetch Stats</AwesomeButton>
           </form>

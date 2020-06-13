@@ -18,7 +18,11 @@ class DbClient:
         result = {}
         for key, table_name in table_names.items():
             table = db[table_name]
-            result[key] = table.find_one({'pid':str(player_id)})
+            
+            db_response = table.find_one({'pid':str(player_id)})
+            if db_response == None:
+                return None
+            result[key] = db_response
             result[key].pop('_id',None)
             result[key].pop('pid',None)
             captions = list(result[key].keys())

@@ -1,6 +1,6 @@
 from configparser import ConfigParser
 from db_service import DbClient
-from flask import Flask, make_response, jsonify, request
+from flask import Flask, make_response, jsonify, request, abort
 
 def build_cors_prelight_response():
     response = make_response()
@@ -25,7 +25,6 @@ def service():
         response = jsonify({'msg':'Hi, Welcome to CricRadar!'})
         return corsify_response(response)
     if request.method == 'POST':
-        # request.data
         params = request.get_json()
         player_id = params.get('id')
         format_ = params.get('format')
@@ -33,6 +32,8 @@ def service():
         print(player_id, format_, aspect)
         client = DbClient()
         query_response = client.fetch_stats(player_id, format_, aspect)
+        if query_response is None:
+            abort(404, description="Resource not found")
         json_response = jsonify(query_response)
         return corsify_response(json_response)
 

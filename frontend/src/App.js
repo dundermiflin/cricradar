@@ -18,24 +18,6 @@ class App extends Component {
         );
   }
 
-  fetchStats = () => {
-    fetch("http://localhost:7000",
-    {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({id: '3600', format: 'test', aspect: 'Batting'})
-    })
-    .then(response => response.json())
-    .then(response => {
-
-      this.setState({
-        captions: response["captions"],
-        data: [{data:response["percentiles"], meta:{ color: 'red' }}],
-        showChart: true
-      });
-    })
-  }
-
   componentDidMount(){
     this.testAPI();
     // this.fetchStats();
