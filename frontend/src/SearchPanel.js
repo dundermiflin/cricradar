@@ -1,31 +1,29 @@
 import React, { Component } from 'react';
 import { AwesomeButton } from 'react-awesome-button';
 import "react-awesome-button/dist/styles.css";
-import RadarChart from 'react-svg-radar-chart';
 import 'react-svg-radar-chart/build/css/index.css';
+import {BrowserRouter as Router, Link} from 'react-router-dom'
 
 class SearchPanel extends Component {
     constructor(props) {
       super(props);
-      this.state = {captions: {},
-                    data: {},
-                    showChart: false,
-                    error: false,
-                    pid: '3600',
-                    format: 'test',
-                    aspect: 'Batting'
-                    };
+      this.state = {
+        pattern:'',
+        error:false,
+        results: <p>Results here</p>,
+        showSearch: false
+      };
   
       this.handleChange = this.handleChange.bind(this);
       this.handleSubmit = this.handleSubmit.bind(this);
     }
 
-    fetchStats = () => {
-        fetch("/",
+    fetchSearch = () => {
+        fetch("/search",
         {
           method: "POST",
           headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({id: this.state.pid, format: this.state.format, aspect: this.state.aspect})
+          body: JSON.stringify({pattern: this.state.pattern, num: 10})
         })
         .then(response => {
           if (response.status >= 200 && response.status <= 299) {
@@ -35,71 +33,55 @@ class SearchPanel extends Component {
           }
         })
         .then(response => {
-          this.setState({
-            captions: response["captions"],
-            data: [{data:response["percentiles"], meta:{ color: 'red' }}],
-            showChart: true,
-            error: false
-          });
+            var newLinks = []
+            for(var res of response){
+              newLinks.push(
+                <div>
+                    <Link to={`/stats/${res['id']}`}>{res['name']}</Link>
+                </div>
+                )
+            }
+            var result = <div>
+                          {newLinks}
+                          </div>
+            this.setState({
+              error: false,
+              showSearch: true,
+              results: result,
+            });
+          console.log(response);
         })
         .catch((error) => {
           this.setState({
-            error: true
+            error: true,
+            showSearch: false,
+            results: <p>Error in fetching</p>
           });
         })
       }
   
     handleChange(event) {
-        if(event.target.name !== 'pid'){
-          this.fetchStats();
-        }
         this.setState({
             [event.target.name]: event.target.value});
     }
   
     handleSubmit(event) {
       event.preventDefault();
-      this.fetchStats()
+      this.fetchSearch()
     }
   
     render() {
-        var radar = null;
-        if (this.state.showChart === true){
-          radar = <RadarChart
-                  captions={this.state.captions}
-                  data={this.state.data}
-                  size={400}
-                />
-        }
-        if (this.state.error === true){
-          radar = <p>Error in fetching</p>
-        }
       return (
         <div>
           <form onSubmit={this.handleSubmit}>
             <label>
-              Player ID:
-              <input type="text" name="pid" value={this.state.pid} onChange={this.handleChange} />
+              Player name:
+              <input type="text" name="pattern" value={this.state.pattern} onChange={this.handleChange} />
             </label>
-            <label>
-              Format:
-              <select name="format" value={this.state.format} onChange={this.handleChange}>
-                <option value="test">Test</option>
-                <option value="odi">ODI</option>
-                <option value="t20i">T20I</option>
-              </select>
-            </label>
-            <label>
-              Aspect:
-              <select name="aspect" value={this.state.aspect} onChange={this.handleChange}>
-                <option value="Batting">Batting</option>
-                <option value="Bowling">Bowling</option>
-              </select>
-            </label>
-            <AwesomeButton type="submit" value="Submit">Fetch Stats</AwesomeButton>
+            <AwesomeButton type="submit" value="Submit">Search</AwesomeButton>
           </form>
           <div>
-              {radar}
+              {this.state.results}
           </div>
         </div>
       );

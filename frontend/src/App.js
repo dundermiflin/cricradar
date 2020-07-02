@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import './App.css';
 import SearchPanel from './SearchPanel';
+import StatsPanel from './StatsPanel';
+import {BrowserRouter as Router, Route, Switch, withRouter} from 'react-router-dom'
 
 class App extends Component {
   constructor(props){
@@ -10,7 +12,7 @@ class App extends Component {
   }
 
   testAPI = () => {
-    fetch("http://localhost:7000")
+    fetch("/test")
       .then(reponse => reponse.json())
       .then(response => {
         this.setState({apiResponse: response['msg']});
@@ -20,8 +22,6 @@ class App extends Component {
 
   componentDidMount(){
     this.testAPI();
-    // this.fetchStats();
-    // console.log(this.state);
   }
 
   render() {
@@ -30,7 +30,12 @@ class App extends Component {
         <div className="App-header">
           <h2>{this.state.apiResponse}</h2>
         </div>
-        <SearchPanel/>
+        <Router>
+          <Switch>
+            <Route exact path="/" component={withRouter(SearchPanel)}/>
+            <Route path="/stats/:pid" component={withRouter(StatsPanel)}/>
+          </Switch>
+        </Router>
       </div>
     );
   }
