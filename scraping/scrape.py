@@ -122,11 +122,16 @@ def convert_to_rank(dataframes, formats, aspects):
 
     return dataframes_pct
 
-def write_tables(dataframes, dataframes_pct, formats, aspects, client):
+def write_tables(dataframes, dataframes_pct, formats, aspects, client, db_file):
     db = client.stats
+    stats_db = {}
     for format_ in formats.values():
+        stats_db[format_] = {}
         for aspect in aspects:
-
+            stats_db[format_][aspect] = {
+                'stats':{},
+                'percentiles':{}
+            }
             dataframes[format_][aspect].reset_index(inplace=True)
             dataframes_pct[format_][aspect].reset_index(inplace=True)
 
@@ -135,11 +140,17 @@ def write_tables(dataframes, dataframes_pct, formats, aspects, client):
             
             for record in dataframes[format_][aspect].to_dict(orient='records'):
                 stats.insert_one(record)
+                stats_db[format_][aspect]['stats'][record['pid']] = record
                 print('Stats for Player {} added'.format(record['pid']))
             
             for record in dataframes_pct[format_][aspect].to_dict(orient='records'):
                 stats_pct.insert_one(record)
+                stats_db[format_][aspect]['percentiles'][record['pid']] = record
                 print('Percentile Stats for Player {} added'.format(record['pid']))
+    print(db_file)
+    with open(db_file, 'wb') as f:
+        pk.dump(stats_db, f)
+    print("Scraping done!")
             
 
 if __name__ == "__main__":
@@ -153,6 +164,7 @@ if __name__ == "__main__":
     base_path = config['Files']['BasePath']
     mappings_file = '{}/{}'.format(base_path, config['Files']['Mappings'])
     stats_file = '{}/{}'.format(base_path, config['Files']['Stats'])
+    db_file = '{}/{}'.format(base_path, config['Files']['DB'])
 
     db_url = config['DB']['url']
     db_port = int(config['DB']['PORT'])
@@ -190,4 +202,4 @@ if __name__ == "__main__":
         percentile_dataframes = convert_to_rank(dataframes, formats, aspects)
 
         client = MongoClient(db_url, db_port)
-        write_tables(dataframes, percentile_dataframes, formats, aspects, client)
+        write_tables(dataframes, percentile_dataframes, formats, aspects, client, db_file)
