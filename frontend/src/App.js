@@ -12,7 +12,7 @@ class App extends Component {
   }
 
   testAPI = () => {
-    fetch("/test")
+    fetch("http://dundermiflin.pythonanywhere.com/test")
       .then(reponse => reponse.json())
       .then(response => {
         this.setState({apiResponse: response['msg']});

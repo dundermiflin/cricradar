@@ -26,7 +26,7 @@ class StatsPanel extends Component {
     }
 
     fetchStats = () => {
-        fetch("/stats",
+        fetch("http://dundermiflin.pythonanywhere.com/stats",
         {
           method: "POST",
           headers: {"Content-Type": "application/json"},

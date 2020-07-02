@@ -19,7 +19,7 @@ class SearchPanel extends Component {
     }
 
     fetchSearch = () => {
-        fetch("/search",
+        fetch("http://dundermiflin.pythonanywhere.com/search",
         {
           method: "POST",
           headers: {"Content-Type": "application/json"},
